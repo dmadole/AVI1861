@@ -17,3 +17,6 @@ I decided to correct this issue by switching to a CD4014 shift register, which h
 Other discussion and feedback from the group was that the AVI1861 did not work in the RCA Studio II machine, with Bob Armstrong himself suggesting that this was probably due to the RESET- input not being a Schmitt trigger like the original part. So I added a 74LVC1G17 Schmitt trigger buffer to that pin to better replicate the original behavior.
 
 Lastly, two of the pins on the CDPO1861, INT- and DMAO- were open-drain outputs, and on the STG1861 this was accomplished by putting diodes in series with the outputs so they could only drive low. Although I didn't know of any instance where this was for sure causing a problem, as long as I was updating the design I replaced these diodes with two true open-drain gates using a 74LVC2G07 buffer.
+
+So in the end, this is not an exact reproduction of Ed's work, but rather an improved design based on the same concept and packaging. But I am sure that is how Ed himself would have also gone aboutrecreating it if he had to as well.
+
