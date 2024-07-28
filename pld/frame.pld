@@ -1,0 +1,80 @@
+/* frame.pld - CDP1861 (Pixie) Replacement Frame Timing			*/
+/*									*/
+/*   Copyright (C) 2004 by Robert Armstrong, Milpitas, California.	*/
+/*									*/
+/*  This program is free software; you can redistribute it and/or	*/
+/* modify it under the terms of the GNU General Public License as	*/
+/* published by the Free Software Foundation; either version 2 of the	*/
+/* License, or (at your option) any later version.			*/
+/*									*/
+/*  This program is distributed in the hope that it will be useful, but	*/
+/* WITHOUT ANY WARRANTY; without even the implied warranty of		*/
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU	*/
+/* General Public License for more details.				*/
+/*									*/
+/*   You should have received a copy of the GNU General Public License	*/
+/* along with this program; if not, write to the Free Software		*/
+/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA.	*/
+/*									*/
+NAME		FRAME;
+PARTNO		FRAME;
+REVISION	C;
+DATE		07/28/24;
+DESIGNER	Robert Armstrong;
+COMPANY		Spare Time Gizmos;
+ASSEMBLY	AVI1861;
+LOCATION	U2;
+DEVICE		G22V10;
+                                                    
+/* Modified July 2024 by David Madole to hold pins 22 and 23 high since	*/
+/* they are unused so that they are not floating.			*/
+
+/* INPUTS... */
+Pin  1 = !HSYNC;	/* RS-170 horizontal sync pulse from line GAL	*/
+Pin  2 = !RESET;	/* global asynchronous reset			*/
+Pin  [3,4,5,6,7,8,9,10] = [LC0,LC1,LC2,LC3,LC4,LC5,LC6,LC7];
+FIELD LC = [LC0..LC7];
+Pin 11 = DISP_ON;	/* enable video output				*/
+Pin 13 = DISP_OFF;	/* disable  "     "   (timing chain still runs)	*/
+
+/* OUTPUTS... */
+Pin 19 = ACTIVE_VIDEO;	/* signal to line GAL to enable video		*/
+Pin 21 = DISPLAY_ON_H;	/* active high output of the DISPLAY ON FF	*/
+Pin 20 = DISPLAY_ON_L;	/*  "     low    "    "   "    "  "   "  "	*/
+Pin 18 = !COMP_SYNC;	/* RS-170 composite sync output to monitor	*/
+Pin 17 = !DISP_STATUS;	/* frame synchronization to CDP1802		*/
+Pin 16 = !INTREQ;	/* interrupt request to CDP1802			*/
+Pin 15 = !VSYNC;		/* RS-170 vertical sync pulses		*/
+Pin 14 = RESET_LC;	/* TRUE to reset 74HC4040 line counter		*/
+
+Pin 22 = UNUSED0;
+Pin 23 = UNUSED1;
+
+UNUSED0 = 'b'1;
+UNUSED1 = 'b'1;
+
+/*   The DISPLAY_ON logic is a simple set/reset flip flop.  It's turned	*/
+/* on (set) by the DISP_ON input, and it's turned off by either the	*/
+/* DISP_OFF input or a RESET....					*/
+SET_DISPLAY_ON = DISP_ON;
+RESET_DISPLAY_ON = DISP_OFF # RESET;
+DISPLAY_ON_H = SET_DISPLAY_ON # (!DISPLAY_ON_L & !RESET_DISPLAY_ON); 
+DISPLAY_ON_L = RESET_DISPLAY_ON # (!DISPLAY_ON_H & !SET_DISPLAY_ON);
+
+/*  All these signals come simply from decoding the current line count.	*/
+/* Refer to the original RCA CDP1861 vertical timing diagram for more	*/
+/* information, but _remember_ that bit zero of the HC4040 line counter	*/
+/* isn't connected to this GAL.  That means that all the counts you see	*/
+/* here are the actual line number divided by 2!  Since all the frame	*/
+/* timing for the 1861 occurs on even numbered lines anyway, this is no	*/
+/* loss.								*/
+VSYNC = LC:['D'0..'D'7];
+INTREQ = DISPLAY_ON_H & LC:'D'39;
+DISP_STATUS = LC:['D'38..'D'39] # LC:['D'102..'D'103];
+ACTIVE_VIDEO = DISPLAY_ON_H & LC:['D'40..'D'103];
+RESET_LC = LC:'D'131 # RESET;
+
+/*   And finally, the COMPOSITE SYNC output is just the XOR of the	*/
+/* horizontal sync (from the frame GAL) and the internal vertical sync.	*/
+COMP_SYNC = HSYNC $ VSYNC;
+

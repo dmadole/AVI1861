@@ -1,0 +1,183 @@
+/* line.pld - CDP1861 (Pixie) Replacement Line Timing			*/
+/*									*/
+/*   Copyright (C) 2004 by Robert Armstrong, Milpitas, California.	*/
+/*									*/
+/*  This program is free software; you can redistribute it and/or	*/
+/* modify it under the terms of the GNU General Public License as	*/
+/* published by the Free Software Foundation; either version 2 of the	*/
+/* License, or (at your option) any later version.			*/
+/*									*/
+/*  This program is distributed in the hope that it will be useful, but	*/
+/* WITHOUT ANY WARRANTY; without even the implied warranty of		*/
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU	*/
+/* General Public License for more details.				*/
+/*									*/
+/*   You should have received a copy of the GNU General Public License	*/
+/* along with this program; if not, write to the Free Software		*/
+/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111 USA.	*/
+/*									*/
+
+NAME		LINE;
+PARTNO		LINE;
+REVISION	B;
+DATE		07/28/24;
+DESIGNER	Robert Armstrong;
+COMPANY		Spare Time Gizmos;
+ASSEMBLY	AVI1861;
+LOCATION	U1;
+DEVICE		G22V10;
+                                                    
+/* Modified July 2024 by David Madole to use a CD4021 shift register	*/
+/* instead of a 74HC165 by un-inverting LOAD_VIDEO and removing PCLOCK	*/
+/* since the parallel load on the CD4021 is already synchronous with	*/
+/* the serial clock. Also made pin 16 held high since it is unused.	*/
+
+/* INPUTS... */
+Pin  1 = CCLOCKI;	/* character (byte) clock input			*/
+Pin  2 = SYNC_REF;	/* "early" timing pulse (TPA)			*/
+Pin  3 = LOAD;		/* "late"    "      "   (TPB)			*/ 
+Pin  4 = CONTROL_A;	/* CPU state code 1 (SC1)			*/
+Pin  5 = CONTROL_B;	/*  "    "    "   0 (SC0)			*/
+Pin 10 = PCLOCK;	/* Pixel clock (1.7MHz) to video shift register	*/
+Pin 11 = !RESET;	/* global asynchronous reset			*/
+Pin 13 = VIDEO_ENABLE;	/* TRUE whenever video is active		*/
+
+/* OUTPUTS... */
+Pin 23 = CCLOCKO;	/* character (byte) clock output (to pin 1!)	*/
+Pin 22 = LOAD_VIDEO;	/* TRUE to load the video shift register	*/
+Pin 21 = !DMAREQ;	/* DMA request to CPU				*/
+Pin [20,19,18,17] = [MC0,MC1,MC2,MC3];
+Pin 15 = !HSYNC;	/* Horizontal sync output to composite sync	*/
+Pin 14 = !HCLOCK;	/* Clock for HC4040 line counter		*/
+
+/* UNUSED OUTPUT /*
+Pin 16 = UNUSED;
+UNUSED = 'b'1;
+
+/* Synonyms for the standard 1802 <-> 1861 connections... */
+SC0 = CONTROL_B;  SC1 = CONTROL_A;
+TPA = SYNC_REF;   TPB = LOAD;
+
+/* Decode the CONTROL A/B inputs to determine the current CPU state... */
+FETCH   = !SC1 & !SC0;
+EXECUTE = !SC1 &  SC0;
+DMAACK  =  SC1 & !SC0;
+INTACK  =  SC1 &  SC0;
+
+
+/*   The main part of the GAL logic is a state machine that determines	*/
+/* the horizontal line timing.  The state machine is, with one notable	*/
+/* exception, clocked by the positive edge of the SYNC_REF (TPA) input.	*/
+/* The "notable exception" to the state machine clocking occurs during	*/
+/* the last state in which we do a bit of magic to generate an "extra"	*/
+/* state clocked by the negative edge	of TPB.				*/
+/*									*/
+/*   Since every horizontal line requires exactly fourteen machine	*/
+/* cycles and because of the "magic" to split the last state into two	*/
+/* parts, each line requires fifteen states.  A four bit register keeps	*/
+/* track of the current states and the state codes are simply assigned	*/
+/* sequentially, 0..14.							*/
+FIELD MC = [MC0..3];	/* current state (and machine cycle)		*/
+
+/* The asynchronous reset starts us off in state zero... */
+MC.AR = RESET;  MC.SP = 'b'0;
+
+/* State machine sequence... */
+sequence MC {
+
+  /*   State 0 continues the HSYNC and HCLOCK outputs, which actually	*/
+  /* started back in state 14...					*/
+  present 'D'0
+    out HSYNC, HCLOCK;
+    default next 'D'1;
+
+  /*   State 1 is a "no nothing" which accounts for part of the blank	*/
+  /* border on the left side of the screen...				*/
+  present 'D'1
+    default next 'D'2;
+
+  /*   State 2 still has no active video (and hence is still part of	*/
+  /* the left border), but we begin asserting DMAREQ now. Since it will	*/
+  /* take another cycle for DMAREQ to be recognized and acknowledged by	*/
+  /* the CPU, we have to start DMAREQ now to have data ready by state 3.*/
+  present 'D'2
+    /*   Note that DMAREQs only occur if the video is active.  If the	*/
+    /* video is currently suppressed, we still generate the same timing	*/
+    /* however DMAREQs are suppressed.					*/
+    if (VIDEO_ENABLE) out DMAREQ;
+    next 'D'3;
+
+  /*   States 3 thru 9 are all the same - each one transfers a byte of	*/
+  /* DMA data from the data bus to the video shift register.  DMAREQ	*/
+  /* remains asserted all the time, and the 1802 should remain in a	*/
+  /* continuous series of consectutive DMA cycles.			*/
+$REPEAT i=[3..9]
+  present 'D'{i}
+    /*   Note that DMA data is clocked into the shift register during	*/
+    /* the TPB phase of the machine cycle. Notice that data transfer	*/
+    /* takes place only if the CPU actually acknowledges a DMA transfer	*/
+    /* state.  If the CPU isn't in the DMAACK state, then something is	*/
+    /* hopelessly wrong and we just display black pixels...		*/
+    if (LOAD & DMAACK & VIDEO_ENABLE) out LOAD_VIDEO;
+    if (VIDEO_ENABLE) out DMAREQ;
+    default next 'D'{i+1};
+$REPEND
+
+  /*   State 10 is similar to 3..9 in that it still transfers a byte of	*/
+  /* of video data, however this is the last byte of data we'll	need on	*/
+  /* this line and hence there is no DMAREQ now. The 1802 will actually	*/
+  /* stop DMA and return to an instruction fetch cycle in the next	*/
+  /* state after this one.  Note that we've transferred exactly eight	*/
+  /* video bytes per line...						*/
+  present 'D'10
+    if (LOAD & DMAACK & VIDEO_ENABLE) out LOAD_VIDEO;
+    default next 'D'11;
+
+  /*   The next three state are idle and these states plus states 0, 1	*/
+  /* and 2 represent six machine cycles per line in which the 1802 is	*/
+  /* allowed to return to executing instructions.  There's enough time	*/
+  /* here to execute exactly three fetch/execute pairs.			*/
+$REPEAT i=[11..13]
+  present 'D'{i}
+    default next 'D'{i+1};
+$REPEND
+
+  /*   This next state, #14, is a "magic" state for us.  The original	*/
+  /* CDP1861 design begins asserting HSYNC on the negative edge of TPB	*/
+  /* (not TPA!) in the last machine cycle of every line.  This causes	*/
+  /* us a problem because our state machine is clocked by TPA, not TPB.	*/
+  /* The clock generation circuitry (see the CCLOCKO output) generates	*/
+  /* an extra positive edge on our state machine clock from the falling	*/
+  /* edge of TPA, but ONLY WHEN WE ARE CURRENTLY IN STATE 13.  This	*/
+  /* effectively splits the last machine cycle of each line into two	*/
+  /* states instead of one!						*/
+  present 'D'14
+    /* Start asserting HSYNC (and HCLOCK) here... */
+    out HSYNC, HCLOCK;
+    /*   For the timing to work out, the processor needs to be in the	*/
+    /* EXECUTE at the beginning of state 0, in the FETCH state for	*/
+    /* state 1, EXECUTE again for state 2, and then DMAACK for state 3.	*/
+    /* If the processor is in the FETCH state at the beginning of state	*/
+    /* zero then we need to skip state zero completely and go directly	*/
+    /* to state 1 in order to regain synchronization.  (Remember, even	*/
+    /* though this IF statement appears in state 14, the results of the	*/
+    /* IF aren't clocked into the state register until the very start	*/
+    /* of the _next_ state!)						*/
+    if FETCH next 'D'1;
+    default next 'D'0;
+
+  /*   State 15 is never used and should never occur, but its important	*/
+  /* to define a proper next state for it just in case some random	*/
+  /* glitch causes it to occur!						*/
+  present 'D'15
+    default next 'D'0;
+}
+
+
+/*   The CCLOCKO output is looped back to drive this GAL's clock input	*/
+/* (pin 1), which is in turn the state machine clock.  This little hack	*/
+/* is necessary because we need an extra edge - an extra state - to	*/
+/* implement the HSYNC timing correctly.  See the description of state	*/
+/* 14, above...								*/
+CCLOCKO = SYNC_REF # (MC:'D'13 & !LOAD);
+
