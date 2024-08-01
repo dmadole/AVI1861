@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "AVI-1861-Reproduction")(type "KiCad")(uri "${KIPRJMOD}/AVI-1861-Reproduction.kicad_sym")(options "")(descr ""))
+)
