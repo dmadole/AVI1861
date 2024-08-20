@@ -1,8 +1,6 @@
 # AVI1861
 
-> [!NOTE]
-> I have found another issue with the ATG1861 design that I will be correcting in a revision B  (as well as the couple of revision A errata).
-> This is currently being tested and new artwork in production, I will be posting more information as that progresses.
+Note: I have updated the design to revision B, which corrects an issue in the original STG1861 in which the clock input to the shift register is the opposite polarity of the CDP1861. In most circuits it doesn't matter but in certain cases and with older CDP1802 processors, it causes display anomalies, and this revision corrects that.
 
 This is an update of the [AVI1861](http://www.cosmacvip.com/avi1861/avi1861.html) which is a drop-in replacement for the obsolete RCA [CDP1861](http://www.cosmacelf.com/publications/data-sheets/cdp1861.pdf) video chip. While the CDP1861 was a very low-cost way to produce video, it was rather low resolution and had other severe limitations such as being tied extremely closely to the RCA1802 microprocessor. Thus, although it was used in many iconic early systems, it was never used in anything with mass-market success and went out of production in a few years and is very difficult to obtain today.
 
