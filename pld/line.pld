@@ -38,7 +38,7 @@ Pin  2 = SYNC_REF;	/* "early" timing pulse (TPA)			*/
 Pin  3 = LOAD;		/* "late"    "      "   (TPB)			*/ 
 Pin  4 = CONTROL_A;	/* CPU state code 1 (SC1)			*/
 Pin  5 = CONTROL_B;	/*  "    "    "   0 (SC0)			*/
-Pin 10 = PCLOCK;	/* Pixel clock (1.7MHz) to video shift register	*/
+Pin 10 = SCLOCK;	/* System clock from CPU (1.7 Mhz)		*/
 Pin 11 = !RESET;	/* global asynchronous reset			*/
 Pin 13 = VIDEO_ENABLE;	/* TRUE whenever video is active		*/
 
@@ -47,12 +47,9 @@ Pin 23 = CCLOCKO;	/* character (byte) clock output (to pin 1!)	*/
 Pin 22 = LOAD_VIDEO;	/* TRUE to load the video shift register	*/
 Pin 21 = !DMAREQ;	/* DMA request to CPU				*/
 Pin [20,19,18,17] = [MC0,MC1,MC2,MC3];
+Pin 16 = !PCLOCK;	/* Pixel clock to video shift register		*/
 Pin 15 = !HSYNC;	/* Horizontal sync output to composite sync	*/
 Pin 14 = !HCLOCK;	/* Clock for HC4040 line counter		*/
-
-/* UNUSED OUTPUT /*
-Pin 16 = UNUSED;
-UNUSED = 'b'1;
 
 /* Synonyms for the standard 1802 <-> 1861 connections... */
 SC0 = CONTROL_B;  SC1 = CONTROL_A;
@@ -181,3 +178,8 @@ $REPEND
 /* 14, above...								*/
 CCLOCKO = SYNC_REF # (MC:'D'13 & !LOAD);
 
+/*   The pixel clock driving the shift register is the complement of	*/
+/* the system clock, since according to the 1861 datasheet, the data	*/
+/* is shifted on the falling edge.					*/
+
+PCLOCK = SCLOCK;
