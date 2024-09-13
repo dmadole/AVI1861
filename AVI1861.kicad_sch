@@ -1748,7 +1748,7 @@
     (property "Reference" "U4" (id 0) (at 57.2644 116.9502 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "4040" (id 1) (at 57.2644 119.4871 0)
+    (property "Value" "HC4040" (id 1) (at 57.2644 119.4871 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "AVI-1861-Reproduction:TSSOP-16_4.4x5.0mm_P0.65mm" (id 2) (at 55.245 135.89 0)
@@ -2155,7 +2155,7 @@
       (reference "U3") (unit 1) (value "4014") (footprint "AVI-1861-Reproduction:TSSOP-16_4.4x5.0mm_P0.65mm")
     )
     (path "/60fb8c6c-3e51-4dc2-b64a-9b7c7559f0fb"
-      (reference "U4") (unit 1) (value "4040") (footprint "AVI-1861-Reproduction:TSSOP-16_4.4x5.0mm_P0.65mm")
+      (reference "U4") (unit 1) (value "HC4040") (footprint "AVI-1861-Reproduction:TSSOP-16_4.4x5.0mm_P0.65mm")
     )
     (path "/311ded7e-fb2d-4bc8-b096-fe14c1cdb651"
       (reference "U5") (unit 1) (value "74LVC1G17") (footprint "Package_TO_SOT_SMD:SOT-23-5")
