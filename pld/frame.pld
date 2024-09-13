@@ -67,8 +67,11 @@ DISPLAY_ON_L = RESET_DISPLAY_ON # (!DISPLAY_ON_H & !SET_DISPLAY_ON);
 /* isn't connected to this GAL.  That means that all the counts you see	*/
 /* here are the actual line number divided by 2!  Since all the frame	*/
 /* timing for the 1861 occurs on even numbered lines anyway, this is no	*/
-/* loss.								*/
-VSYNC = LC:['D'0..'D'7];
+/* loss. The 1861 makes the vertical sync 16 lines wide, but many	*/
+/* analog monitors will lose horizontal sync if its that long; this is	*/
+/* especially true because the horizontal sync edge moves due to the	*/
+/* simple use of xor to combine vertical and horizonal.			*/
+VSYNC = LC:['D'0..'D'3];
 INTREQ = DISPLAY_ON_H & LC:'D'39;
 DISP_STATUS = LC:['D'38..'D'39] # LC:['D'102..'D'103];
 ACTIVE_VIDEO = DISPLAY_ON_H & LC:['D'40..'D'103];
