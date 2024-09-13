@@ -1,5 +1,7 @@
 # AVI1861
 
+Note: I have found in testing that a 74HC4040 works consistently well where the CD4040 previously specified may require parts to be hand-picked, so I have changed the BOM to the HCMOS part. I have also updated the FRAME PLD code to output a 8-line-wide vertical sync pulse instead of 16 lines as, while this is different than the CDP1861, it does improve display quality on some analog monitors and I don't think hurts anything. I am calling this revision B1 as there is no circuit board change.
+
 Note: I have updated the design to revision B, which corrects an issue in the original STG1861 in which the clock input to the shift register is the opposite polarity of the CDP1861. In most circuits it doesn't matter but in certain cases and with older CDP1802 processors, it causes display anomalies, and this revision corrects that.
 
 This is an update of the [AVI1861](http://www.cosmacvip.com/avi1861/avi1861.html) which is a drop-in replacement for the obsolete RCA [CDP1861](http://www.cosmacelf.com/publications/data-sheets/cdp1861.pdf) video chip. While the CDP1861 was a very low-cost way to produce video, it was rather low resolution and had other severe limitations such as being tied extremely closely to the RCA1802 microprocessor. Thus, although it was used in many iconic early systems, it was never used in anything with mass-market success and went out of production in a few years and is very difficult to obtain today.
